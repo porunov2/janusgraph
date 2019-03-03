@@ -955,6 +955,8 @@ public abstract class IndexProviderTest {
         assertEquals(1, tx.queryStream(query).count(), query.toString());
         query = new IndexQuery(store, PredicateCondition.of(STRING, Cmp.EQUAL, "Tom or Jerry"));
         assertEquals(1, tx.queryStream(query).count(), query.toString());
+        query = new IndexQuery(store, PredicateCondition.of(STRING, Cmp.EQUAL, "Tom"));
+        assertEquals(1, tx.queryStream(query).count(), query.toString());
         query = new IndexQuery(store, PredicateCondition.of(STRING, Text.PREFIX, "jerr"));
         assertEquals(1, tx.queryStream(query).count(), query.toString());
         query = new IndexQuery(store, PredicateCondition.of(STRING, Text.REGEX, "jer.*"));

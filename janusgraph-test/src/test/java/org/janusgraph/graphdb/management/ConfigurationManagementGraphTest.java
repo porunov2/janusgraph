@@ -14,6 +14,8 @@
 
 package org.janusgraph.graphdb.management;
 
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.graphdb.configuration.builder.GraphDatabaseConfigurationBuilder;
 import org.janusgraph.graphdb.management.JanusGraphManager;
 import org.janusgraph.core.schema.JanusGraphManagement;
@@ -33,10 +35,17 @@ import org.apache.commons.configuration.MapConfiguration;
 import java.util.Map;
 import java.util.HashMap;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ConfigurationManagementGraphTest {
+
+    @AfterEach
+    public void removeStaticSingletonAfterTest() {
+        JanusGraphManager.shutdownJanusGraphManager();
+        ConfigurationManagementGraph.shutdownConfigurationManagementGraph();
+    }
 
     @Test
     public void shouldReindexIfPropertyKeyExists() throws Exception {
@@ -63,5 +72,23 @@ public class ConfigurationManagementGraphTest {
         assertNotNull(propertyKey);
         assertEquals(ENABLED, index.getIndexStatus(propertyKey));
         management.commit();
+    }
+
+    @Test
+    public void shouldCloseAllTxsIfIndexExists() {
+        final JanusGraphManager gm = new JanusGraphManager(new Settings());
+        final StandardJanusGraph graph = (StandardJanusGraph) JanusGraphFactory.open("inmemory");
+
+        // Emulate ConfigurationManagementGraph indices already exists
+        JanusGraphManagement management = graph.openManagement();
+        PropertyKey key = management.makePropertyKey("some_property").dataType(String.class).make();
+        management.buildIndex("Created_Using_Template_Index", Vertex.class).addKey(key).buildCompositeIndex();
+        management.buildIndex("Template_Index", Vertex.class).addKey(key).buildCompositeIndex();
+        management.buildIndex("Graph_Name_Index", Vertex.class).addKey(key).buildCompositeIndex();
+        management.commit();
+
+        new ConfigurationManagementGraph(graph);
+
+        assertEquals(0, graph.getOpenTransactions().size());
     }
 }
